@@ -32,6 +32,12 @@ ALLOWED_HOSTS = os.environ.get(
     'DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1'
 ).split(',')
 
+# Set when Django sits behind a TLS-terminating proxy (Cloudflare Tunnel).
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip() for origin in
+    os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if origin.strip()
+]
+
 
 # Application definition
 
