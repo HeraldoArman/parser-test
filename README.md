@@ -118,6 +118,49 @@ timeout, and serves static files through WhiteNoise, so `/admin/` is styled
 without a separate web server. SQLite and uploads survive a container
 replacement only if you mount them, as above.
 
+## Deploy behind a Cloudflare Tunnel
+
+Live at **https://parser.heraldoarman.com**, served by a container bound to
+loopback only; Cloudflare reaches it through an existing tunnel, so no inbound
+port is opened.
+
+```sh
+# on the host, once
+git clone https://github.com/HeraldoArman/parser-test.git /root/projects/parser
+cd /root/projects/parser
+mkdir -p var/media && touch var/db.sqlite3
+cat > .env <<EOF
+DJANGO_SECRET_KEY=$(openssl rand -hex 32)
+DJANGO_DEBUG=false
+DJANGO_ALLOWED_HOSTS=parser.heraldoarman.com,localhost,127.0.0.1
+DJANGO_CSRF_TRUSTED_ORIGINS=https://parser.heraldoarman.com
+OCR_THREADS=4
+EOF
+docker build -t brp-parser .
+docker run -d --name brp-run --restart unless-stopped \
+  -p 127.0.0.1:8000:8000 --env-file .env \
+  -v "$PWD/var/db.sqlite3:/app/db.sqlite3" \
+  -v "$PWD/var/media:/app/media" brp-parser
+```
+
+Tunnel ingress (`/etc/cloudflared/config.yml`), before the catch-all rule:
+
+```yaml
+  - hostname: parser.heraldoarman.com
+    service: http://127.0.0.1:8000
+```
+
+```sh
+cp /etc/cloudflared/config.yml /etc/cloudflared/config.yml.bak
+cloudflared tunnel ingress validate && systemctl restart cloudflared
+cloudflared tunnel route dns <tunnel-id> parser.heraldoarman.com
+```
+
+`DJANGO_CSRF_TRUSTED_ORIGINS` is required: TLS ends at Cloudflare, so Django
+sees plain HTTP and would otherwise reject form posts as cross-origin.
+`DJANGO_DEBUG=false` means `runserver` is not used and static files come from
+WhiteNoise.
+
 Watch a running container:
 
 ```sh
