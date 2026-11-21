@@ -13,43 +13,38 @@ so results are reproducible and auditable. Every component keeps its `source_ref
 
 ## Architecture
 
+```mermaid
+flowchart TD
+    A["Browser: N files"] --> B["views.upload<br/>Document row + sha256"]
+    B --> C{"sha256 seen before?"}
+    C -- "yes" --> D["Reuse stored result (66 ms)"]
+    C -- "no" --> E["services.parse_document<br/>extraction.pipeline.analyze"]
+    E --> F["readers.read_document<br/>pdf / docx / xlsx"]
+    F -- "no text layer" --> F2["readers/ocr.py<br/>RapidOCR, 200 dpi"]
+    F2 --> G
+    F --> G["Doc: Table + Block items, page order"]
+    G --> H["candidates.find<br/>table scan + % line runs<br/>scored 0-1.3 with reasons"]
+    H --> I{"validate.evaluate"}
+    I -- "score below 0.45" --> J["not_found"]
+    I -- "score below 0.5" --> K["needs_review"]
+    I -- "2+ plausible readings" --> L["ambiguous"]
+    I -- "sum 100 ±0.5" --> M["ok"]
+    I -- "base 100 + bonus" --> N["bonus"]
+    M --> O["Review page"]
+    N --> O
+    L --> O
+    K --> O
+    J --> O
+    D --> O
+    O -- "pick, edit, approve" --> P["Component rows<br/>source_ref per row"]
+    O --> Q["AnchorEntry<br/>approved heading"]
+    P --> R["Export JSON / CSV"]
 ```
-browser: N files
-      │
-      ▼
-views.upload ── Document row (file, size, sha256)
-      │
-      ▼
-services.parse_document ── sha256 seen before? reuse the stored result
-      │
-      ▼
-extraction.pipeline.analyze(path)
-      │
-      ├─ readers.read_document: suffix → pdf.py / docx.py / xlsx.py
-      │     produces Doc(items) where items are Table(rows) or Block(text),
-      │     each with page + reading order. PDF pages with no text layer go
-      │     through readers/ocr.py and come back as lines *and* a column grid.
-      │
-      ├─ candidates.find: structural scan, no per-course rules
-      │     • every table → weight column guess, name column guess, total row
-      │     • every run of percentage lines ("Kuis 25%", "UTS 30%", …) → list
-      │     • each surviving candidate gets a 0–1.3 score + named reasons
-      │
-      └─ validate.evaluate: the gate
-            tier 0  weights sum to 100 ±0.5
-            tier 1  base (non-bonus) sums to 100
-            tier 2  "plausible" but not exact
-            tier 3  everything else
-            score < 0.45 → not_found | score < 0.5 → needs_review
-            2+ plausible candidates → ambiguous (reviewer decides)
-            ↓
-      Document.status / .result (candidates + reasons + blocks) / .selected
-      │
-      ▼
-review page: switch candidate, edit rows, approve  →  Component rows
-                                                   →  AnchorEntry (heading)
-                                                   →  export JSON | CSV
-```
+
+The gate, in one line: a candidate must score at least 0.5 to be offered, at
+least 0.45 for the document to count as having an assessment section at all,
+and two independent plausible readings always become `ambiguous` instead of a
+silent winner.
 
 ### Modules
 
