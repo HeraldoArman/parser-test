@@ -1,0 +1,35 @@
+{% extends "assessments/base.html" %}
+{% block title %}Upload BRP documents{% endblock %}
+{% block content %}
+<h1>Upload BRP documents</h1>
+
+<div class="card">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <p class="muted">PDF, DOCX or XLSX. Up to 20 MB per file, several files at once.</p>
+    <p><input type="file" name="files" multiple accept=".pdf,.docx,.xlsx" required></p>
+    <p><input type="text" name="note" maxlength="200" placeholder="Batch note (optional, e.g. Ganjil 2026/2027)"></p>
+    <button type="submit">Upload and parse</button>
+  </form>
+</div>
+
+<h2>Recent batches</h2>
+{% if recent %}
+<table>
+  <thead><tr><th>Batch</th><th>Note</th><th>Files</th><th>Created</th><th></th></tr></thead>
+  <tbody>
+  {% for batch in recent %}
+    <tr>
+      <td>#{{ batch.pk }}</td>
+      <td>{{ batch.note|default:"—" }}</td>
+      <td>{{ batch.documents.count }}</td>
+      <td class="muted">{{ batch.created_at|date:"Y-m-d H:i" }}</td>
+      <td><a class="button secondary" href="{% url 'assessments:batch' batch.pk %}">Open</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">No batches yet.</p>
+{% endif %}
+{% endblock %}

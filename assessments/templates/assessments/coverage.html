@@ -1,0 +1,42 @@
+{% extends "assessments/base.html" %}
+{% block title %}Coverage{% endblock %}
+{% block content %}
+<h1>Coverage</h1>
+<p class="muted">{{ total }} document(s) parsed.</p>
+{% if ranker %}
+<p class="muted">Ranker: {{ ranker.samples }} training rows, {{ ranker.positives }} approvals, trained {{ ranker.trained_at }}.</p>
+{% else %}
+<p class="muted">Ranker: not trained yet — approve about 20 documents, then run
+  <code>python manage.py train_ranker</code>.</p>
+{% endif %}
+
+<div class="grid">
+  <section>
+    <h2>By status</h2>
+    <table>
+      <thead><tr><th>Status</th><th>Documents</th></tr></thead>
+      <tbody>
+      {% for row in statuses %}
+        <tr><td><span class="status status-{{ row.status }}">{{ row.status }}</span></td><td>{{ row.count }}</td></tr>
+      {% empty %}
+        <tr><td colspan="2" class="muted">No documents yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  <section>
+    <h2>Format families</h2>
+    <p class="muted">Files sharing a structural fingerprint need the same parser profile. A family with many misses is where to invest next.</p>
+    <table>
+      <thead><tr><th>Fingerprint</th><th>Documents</th><th>Approved</th></tr></thead>
+      <tbody>
+      {% for row in families %}
+        <tr><td>{{ row.fingerprint }}</td><td>{{ row.count }}</td><td>{{ row.approved }}</td></tr>
+      {% empty %}
+        <tr><td colspan="3" class="muted">No fingerprints yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}

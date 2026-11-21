@@ -1,0 +1,88 @@
+{% extends "assessments/base.html" %}
+{% block title %}Review — {{ document.original_name }}{% endblock %}
+{% block content %}
+<h1>{{ document.original_name }}</h1>
+<p>
+  <span class="status status-{{ document.status }}">{{ document.get_status_display }}</span>
+  <span class="muted">· extractor {{ document.extractor_version }} · family {{ document.fingerprint|default:"—" }}
+  {% if document.approved_at %}· approved {{ document.approved_at|date:"Y-m-d H:i" }}{% endif %}</span>
+</p>
+{% if document.error %}<div class="card"><strong>Error:</strong> {{ document.error }}</div>{% endif %}
+{% if document.reasons %}<div class="card"><strong>Why:</strong> {{ document.reasons|join:"; " }}</div>{% endif %}
+
+<div class="grid">
+  <section>
+    <h2>Candidates</h2>
+    <div class="card">
+      {% if candidates %}
+      <form method="post">
+        {% csrf_token %}
+        {% for candidate in candidates %}
+        <label class="candidate">
+          <input type="radio" name="candidate" value="{{ forloop.counter0 }}"
+                 {% if forloop.counter0 == selected %}checked{% endif %}>
+          <span>
+            <strong>{{ candidate.kind }} · {{ candidate.components|length }} components · {{ candidate.total|floatformat:"-2" }}%</strong>
+            <span class="meta">score {{ candidate.score }} · {{ candidate.heading|default:"no heading" }} · page {{ candidate.page|default:"?" }}{% if candidate.model_score %} · model {{ candidate.model_score }}{% endif %}</span>
+            <span class="meta">{{ candidate.reasons|join:"; "|truncatechars:160 }}</span>
+          </span>
+        </label>
+        {% endfor %}
+        <div class="row-actions">
+          <button type="submit" name="action" value="select" class="secondary">Use this candidate</button>
+        </div>
+      </form>
+      {% else %}
+      <p class="muted">No candidate found. Enter the components by hand below.</p>
+      {% endif %}
+    </div>
+
+    <h2>Source</h2>
+    <div class="card">
+      {% if raw_section %}
+      <p class="muted">Matched section</p>
+      <pre>{{ raw_section }}</pre>
+      {% endif %}
+      <details>
+        <summary>Full extracted text ({{ document.blocks|length }} blocks)</summary>
+        <pre>{{ document.source_text }}</pre>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2>Components</h2>
+    <form method="post">
+      {% csrf_token %}
+      {{ formset.management_form }}
+      <table>
+        <thead><tr><th>Name</th><th>Kind</th><th>Weight</th><th>Note</th><th>Del</th></tr></thead>
+        <tbody>
+        {% for form in formset %}
+          <tr>
+            {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+            <td>{{ form.name }}{{ form.name.errors }}</td>
+            <td>{{ form.kind }}</td>
+            <td>{{ form.weight }}{{ form.weight.errors }}</td>
+            <td>{{ form.note }}</td>
+            <td>{% if form.instance.pk %}{{ form.DELETE }}{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <p class="muted">Total: {{ document.total_weight|floatformat:"-2" }}% (target 100%; bonus rows are outside the base).</p>
+      <div class="row-actions">
+        <button type="submit" name="action" value="save" class="secondary">Save draft</button>
+        <button type="submit" name="action" value="approve">Approve</button>
+      </div>
+    </form>
+    <form method="post">
+      {% csrf_token %}
+      <div class="row-actions">
+        <button type="submit" name="action" value="reject" class="danger">Send back to review</button>
+        <button type="submit" formaction="{% url 'assessments:reparse' document.pk %}" class="secondary">Re-run parser</button>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

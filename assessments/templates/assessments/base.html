@@ -1,0 +1,71 @@
+{% load static %}<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}BRP Assessment Parser{% endblock %}</title>
+<style>
+  :root { --ink:#1b1b1b; --muted:#666; --line:#d8d8d8; --accent:#0b5cad; --bg:#fafafa; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--ink); background:var(--bg); }
+  header { background:#fff; border-bottom:1px solid var(--line); }
+  header .wrap, main { max-width:1200px; margin:0 auto; padding:0 20px; }
+  header .wrap { display:flex; gap:20px; align-items:center; height:52px; }
+  header a { color:var(--ink); text-decoration:none; font-weight:600; }
+  header nav { display:flex; gap:16px; margin-left:auto; font-weight:400; }
+  header nav a { color:var(--accent); }
+  main { padding:24px 20px 60px; }
+  h1 { font-size:22px; margin:0 0 16px; }
+  h2 { font-size:17px; margin:24px 0 8px; }
+  .muted { color:var(--muted); }
+  .card { background:#fff; border:1px solid var(--line); border-radius:6px; padding:16px; margin-bottom:16px; }
+  table { width:100%; border-collapse:collapse; background:#fff; }
+  th, td { text-align:left; padding:7px 9px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { background:#f0f2f5; font-size:13px; text-transform:uppercase; letter-spacing:.03em; }
+  input[type=text], input[type=number], select, textarea {
+    width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:4px; font:inherit; background:#fff; }
+  button, .button { display:inline-block; padding:8px 14px; border:1px solid var(--accent); border-radius:4px;
+    background:var(--accent); color:#fff; font:inherit; font-weight:600; cursor:pointer; text-decoration:none; }
+  .button.secondary, button.secondary { background:#fff; color:var(--accent); }
+  button.danger { background:#fff; border-color:#b3261e; color:#b3261e; }
+  .messages { list-style:none; padding:0; }
+  .messages li { padding:9px 12px; border-radius:4px; margin-bottom:8px; background:#e8f3e8; border:1px solid #b9dcb9; }
+  .messages li.error { background:#fdecea; border-color:#f3c2bd; }
+  .status { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; background:#eee; }
+  .status-ok, .status-bonus, .status-approved { background:#d9f2dc; }
+  .status-ambiguous, .status-needs_review { background:#fff1cc; }
+  .status-not_found, .status-failed { background:#fde2e0; }
+  pre { background:#fff; border:1px solid var(--line); border-radius:6px; padding:12px; overflow:auto;
+    white-space:pre-wrap; word-break:break-word; max-height:70vh; font-size:13px; }
+  details { margin-top:12px; }
+  .grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+  .candidate { display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--line); align-items:flex-start; }
+  .candidate:last-child { border-bottom:0; }
+  .candidate strong { font-size:14px; }
+  .candidate .meta { color:var(--muted); font-size:13px; }
+  .row-actions { display:flex; gap:8px; align-items:center; margin-top:12px; flex-wrap:wrap; }
+  .errorlist { color:#b3261e; font-size:13px; margin:2px 0 0; padding-left:16px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="{% url 'assessments:upload' %}">BRP Assessment Parser</a>
+    <nav>
+      <a href="{% url 'assessments:upload' %}">Upload</a>
+      <a href="{% url 'assessments:coverage' %}">Coverage</a>
+      <a href="/admin/">Admin</a>
+    </nav>
+  </div>
+</header>
+<main>
+  {% if messages %}
+  <ul class="messages">
+    {% for message in messages %}<li class="{{ message.tags }}">{{ message }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>
